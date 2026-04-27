@@ -16,8 +16,10 @@
 
 class QLabel;
 class QComboBox;
+class QCheckBox;
 class QPushButton;
 class QString;
+class QWidget;
 
 #include <QtWidgets/QDialog>
 
@@ -74,12 +76,24 @@ public:
 private:
     /// ParamEditor for reading ini-files
     ParamEditor * editor_;
+    /// Label for CPU usage row
+    QLabel * cpu_usage_label_;
+    /// Container for thread controls (FastMode + manual controls)
+    QWidget * threads_widget_;
+    /// Enables automatic use of all available threads
+    QCheckBox * fast_mode_checkbox_;
+    /// Manual thread count dropdown (1..max)
+    QComboBox * threads_combo_;
+    /// Maximum available thread count from OpenMP
+    int max_threads_;
+    /// Whether the current tool offers a threads parameter
+    bool has_threads_param_;
     /// tools description label
     QLabel * tool_desc_;
     /// ComboBox for choosing a TOPP-tool
     QComboBox * tools_combo_;
     /// Button to rerun the automatic plugin detection
-    QPushButton* reload_plugins_button_;
+    QPushButton * reload_plugins_button_;
     /// for choosing an input parameter
     QComboBox * input_combo_;
     /// for choosing an output parameter
@@ -88,6 +102,8 @@ private:
     Param arg_param_;
     /// Param for loading configuration information in the ParamEditor
     Param vis_param_;
+    /// Param containing only parameters shown/edited in the ParamEditor (GUI subset)
+    Param editor_param_;
     /// ok-button connected with slot ok_()
     QPushButton * ok_button_;
     /// Location of the temporary INI file this dialog works on
@@ -103,7 +119,7 @@ private:
     /// Param object containing all plugin params
     Param plugin_params_;
     /// Pointer to the tool scanner for access to the plugins and to rerun the plugins detection
-    TVToolDiscovery* tool_scanner_;
+    TVToolDiscovery * tool_scanner_;
     /// The layer type of the current layer to determine all usable plugins
     LayerDataBase::DataType layer_type_;
 
@@ -117,6 +133,20 @@ private:
     void setInputOutputCombo_(const Param& p);
     /// Create a list of all TOPP tool/util/plugins that are compatible with the active layer type
     QStringList createToolsList_();
+    /// Populate and initialize thread controls
+    void initializeThreadsControls_();
+    /// Show or hide thread controls based on current tool support
+    void updateThreadsControlsVisibility_();
+    /// Synchronize manual controls and fast mode based on current vis_param_ value
+    void syncThreadsControlsFromVisParam_(bool default_fast_mode);
+    /// Apply the selected thread mode/value back to vis_param_
+    bool applyThreadsToVisParam_();
+    /// Clamp requested thread count to valid range [1, max_threads_]
+    int clampThreadCount_(int value) const;
+    /// Build GUI-only editor parameters from internal parameter state
+    void updateEditorParamFromVisParam_();
+    /// Merge edited GUI-only parameters back into internal parameter state
+    void mergeEditorParamIntoVisParam_();
 
 protected slots:
 
@@ -132,6 +162,10 @@ protected slots:
     void storeINI_();
     /// rerun the automatic plugin detection
     void reloadPlugins_();
+    /// Slot toggling between fast and manual thread mode
+    void fastModeToggled_(bool checked);
+    /// Slot handling predefined manual thread selection from combo
+    void manualThreadsComboChanged_(int index);
   };
 
 }
