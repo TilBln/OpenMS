@@ -16,16 +16,16 @@
         <file>cursor_zoom.png</file>
         <file>elements.png</file>
         <file>labels.png</file>
-        <file>lin.png</file>
-        <file>lines.png</file>
-        <file>log.png</file>
-        <file>peaks.png</file>
+        <file>linear.svg</file>
+        <file>log.svg</file>
+        <file>peakmode.svg</file>
         <file>peptidemz.png</file>
-        <file>percentage.png</file>
-        <file>precursors.png</file>
-        <file>projections.png</file>
-        <file>reset_zoom.png</file>
-        <file>snap.png</file>
+        <file>percentage.svg</file>
+        <file>precursors.svg</file>
+        <file>projections.svg</file>
+        <file>raw_data_mode.svg</file>
+        <file>reset_zoom.svg</file>
+        <file>snap.svg</file>
         <file>stop_sign.svg</file>
         <file>tile_horizontal.png</file>
         <file>tile_vertical.png</file>
