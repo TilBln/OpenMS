@@ -28,6 +28,8 @@
 
 //STL
 #include <map>
+#include <tuple>
+#include <vector>
 
 //QT
 #include <QtWidgets/QMainWindow>
@@ -502,6 +504,10 @@ protected:
       String tool;
       String in;
       String out;
+      std::vector<std::pair<String, Size>> input_bindings;
+      std::vector<std::tuple<String, bool, String, bool>> output_bindings;
+      std::vector<String> input_file_names;
+      std::vector<String> output_file_names;
       String file_name;
       String file_name_in;
       String file_name_out;

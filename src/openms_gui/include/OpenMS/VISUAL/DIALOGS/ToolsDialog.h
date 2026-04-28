@@ -14,6 +14,10 @@
 #include <OpenMS/DATASTRUCTURES/Param.h>
 #include <OpenMS/VISUAL/LayerDataBase.h>
 
+#include <tuple>
+#include <utility>
+#include <vector>
+
 class QLabel;
 class QComboBox;
 class QCheckBox;
@@ -26,6 +30,7 @@ class QWidget;
 namespace OpenMS
 {
   class ParamEditor;
+  class PlotCanvas;
   class TVToolDiscovery;
 
   /**
@@ -59,7 +64,7 @@ public:
       @param[in] layer_name The name of the selected layer
       @param[in] tool_scanner Pointer to the tool scanner for access to the plugins and to rerun the plugins detection
     */
-    ToolsDialog(QWidget * parent, const Param& params, String ini_file, String default_dir, LayerDataBase::DataType layer_type, const String& layer_name, TVToolDiscovery* tool_scanner);
+    ToolsDialog(QWidget * parent, const Param& params, String ini_file, String default_dir, LayerDataBase::DataType layer_type, const String& layer_name, PlotCanvas* canvas, Size active_layer_index, TVToolDiscovery* tool_scanner);
     ///Destructor
     ~ToolsDialog() override;
 
@@ -71,6 +76,12 @@ public:
     String getTool();
     /// get the default extension for the output file
     String getExtension();
+
+    /// Returns selected input mappings as (tool parameter name, layer index)
+    std::vector<std::pair<String, Size>> getInputLayerBindings() const;
+
+    /// Returns selected output mappings as (tool parameter name, keep as new layer, extension, required)
+    std::vector<std::tuple<String, bool, String, bool>> getOutputBindings() const;
 
 
 private:
@@ -94,10 +105,36 @@ private:
     QComboBox * tools_combo_;
     /// Button to rerun the automatic plugin detection
     QPushButton * reload_plugins_button_;
-    /// for choosing an input parameter
-    QComboBox * input_combo_;
-    /// for choosing an output parameter
-    QComboBox * output_combo_;
+    /// input mapping container widget
+    QWidget * input_mapping_widget_;
+    /// output mapping container widget
+    QWidget * output_mapping_widget_;
+
+    struct InputMappingRow
+    {
+      String param_name;
+      bool required = false;
+      std::vector<String> extensions;
+      std::vector<Size> eligible_layers;
+      QComboBox* layer_combo = nullptr;
+      QLabel* param_label = nullptr;
+      QLabel* ext_label = nullptr;
+      Size selected_layer = Size(-1);
+    };
+
+    struct OutputMappingRow
+    {
+      String param_name;
+      bool required = false;
+      std::vector<String> extensions;
+      QComboBox* action_combo = nullptr;
+      QLabel* param_label = nullptr;
+      QLabel* ext_label = nullptr;
+      bool keep_as_new_layer = true;
+    };
+
+    std::vector<InputMappingRow> input_rows_;
+    std::vector<OutputMappingRow> output_rows_;
     /// Param for loading the ini-file
     Param arg_param_;
     /// Param for loading configuration information in the ParamEditor
@@ -122,15 +159,25 @@ private:
     TVToolDiscovery * tool_scanner_;
     /// The layer type of the current layer to determine all usable plugins
     LayerDataBase::DataType layer_type_;
+    /// Plot canvas for layer selection in input mappings
+    PlotCanvas* canvas_;
+    /// currently active layer index (used for initial selection)
+    Size active_layer_index_;
 
-    /// Disables the ok button and input/output comboboxes
+    /// Disables the ok button and mapping controls
     void disable_();
-    /// Enables the ok button and input/output comboboxes
+    /// Enables the ok button and mapping controls
     void enable_();
     /// Determine all types a tool is compatible with by mapping each file extensions in a tools param
     std::vector<LayerDataBase::DataType> getTypesFromParam_(const Param& p) const;
-    /// Fill input_combo_ and output_combo_ box with the appropriate entries from the specified param object.
+    /// Build input/output mapping rows and widgets from the specified parameter object.
     void setInputOutputCombo_(const Param& p);
+    /// Rebuild available layer choices for all input rows while enforcing unique layer usage.
+    void refreshInputLayerCombos_();
+    /// Build available input layer list for a given extension filter.
+    std::vector<Size> findCompatibleLayers_(const std::vector<String>& extensions) const;
+    /// Convert layer data type to default file extension used by TOPPView export.
+    static String layerTypeToDefaultExtension_(LayerDataBase::DataType type);
     /// Create a list of all TOPP tool/util/plugins that are compatible with the active layer type
     QStringList createToolsList_();
     /// Populate and initialize thread controls
