@@ -93,7 +93,8 @@ namespace OpenMS
     ws_(this),
     tab_bar_(this),
     recent_files_(),
-    menu_(this, &ws_, &recent_files_)
+    menu_(this, &ws_, &recent_files_),
+    temp_handler_("toppview")
   {
     setWindowTitle("TOPPView");
     setWindowIcon(QIcon(":/TOPPView.png"));
@@ -158,13 +159,14 @@ namespace OpenMS
     //--Basic tool bar for all views--
     tool_bar_ = addToolBar("Basic tool bar");
     tool_bar_->setObjectName("tool_bar");
+    tool_bar_->setIconSize(QSize(32, 32));
 
     // intensity modes
     intensity_button_group_ = new QButtonGroup(tool_bar_);
     intensity_button_group_->setExclusive(true);
 
     b = new QToolButton(tool_bar_);
-    b->setIcon(QIcon(":/lin.png"));
+    b->setIcon(QIcon(":/linear.svg"));
     b->setToolTip("Intensity: Normal");
     b->setShortcut(Qt::Key_N);
     b->setCheckable(true);
@@ -173,7 +175,7 @@ namespace OpenMS
     tool_bar_->addWidget(b);
 
     b = new QToolButton(tool_bar_);
-    b->setIcon(QIcon(":/percentage.png"));
+    b->setIcon(QIcon(":/percentage.svg"));
     b->setToolTip("Intensity: Percentage");
     b->setShortcut(Qt::Key_P);
     b->setCheckable(true);
@@ -185,7 +187,7 @@ namespace OpenMS
     tool_bar_->addWidget(b);
 
     b = new QToolButton(tool_bar_);
-    b->setIcon(QIcon(":/snap.png"));
+    b->setIcon(QIcon(":/snap.svg"));
     b->setToolTip("Intensity: Snap to maximum displayed intensity");
     b->setShortcut(Qt::Key_S);
     b->setCheckable(true);
@@ -196,7 +198,7 @@ namespace OpenMS
     tool_bar_->addWidget(b);
 
     b = new QToolButton(tool_bar_);
-    b->setIcon(QIcon(":/log.png"));
+    b->setIcon(QIcon(":/log.svg"));
     b->setToolTip("Intensity: Use log scaling for colors");
     b->setCheckable(true);
     b->setWhatsThis("Intensity: Logarithmic scaling of intensities for color calculation");
@@ -207,7 +209,7 @@ namespace OpenMS
     tool_bar_->addSeparator();
 
     // common buttons
-    QAction* reset_zoom_button = tool_bar_->addAction(QIcon(":/reset_zoom.png"), "Reset Zoom", this, &TOPPViewBase::resetZoom);
+    QAction* reset_zoom_button = tool_bar_->addAction(QIcon(":/reset_zoom.svg"), "Reset Zoom", this, &TOPPViewBase::resetZoom);
     reset_zoom_button->setWhatsThis("Reset zoom: Zooms out as far as possible and resets the zoom history.<BR>(Hotkey: Backspace)");
 
     tool_bar_->show();
@@ -215,13 +217,14 @@ namespace OpenMS
     //--1D toolbar--
     tool_bar_1d_ = addToolBar("1D tool bar");
     tool_bar_1d_->setObjectName("1d_tool_bar");
+    tool_bar_1d_->setIconSize(QSize(32, 32));
 
     // draw modes 1D
     draw_group_1d_ = new QButtonGroup(tool_bar_1d_);
     draw_group_1d_->setExclusive(true);
 
     b = new QToolButton(tool_bar_1d_);
-    b->setIcon(QIcon(":/peaks.png"));
+    b->setIcon(QIcon(":/peakmode.svg"));
     b->setToolTip("Peak mode");
     b->setShortcut(Qt::Key_I);
     b->setCheckable(true);
@@ -230,7 +233,7 @@ namespace OpenMS
     tool_bar_1d_->addWidget(b);
 
     b = new QToolButton(tool_bar_1d_);
-    b->setIcon(QIcon(":/lines.png"));
+    b->setIcon(QIcon(":/raw_data_mode.svg"));
     b->setToolTip("Raw data mode");
     b->setShortcut(Qt::Key_R);
     b->setCheckable(true);
@@ -244,15 +247,16 @@ namespace OpenMS
     //--2D peak toolbar--
     tool_bar_2d_peak_ = addToolBar("2D peak tool bar");
     tool_bar_2d_peak_->setObjectName("2d_tool_bar");
+    tool_bar_2d_peak_->setIconSize(QSize(32, 32));
 
-    dm_precursors_2d_ = tool_bar_2d_peak_->addAction(QIcon(":/precursors.png"), "Show fragment scan precursors");
+    dm_precursors_2d_ = tool_bar_2d_peak_->addAction(QIcon(":/precursors.svg"), "Show fragment scan precursors");
     dm_precursors_2d_->setCheckable(true);
     dm_precursors_2d_->setWhatsThis("2D peak draw mode: Precursors<BR><BR>fragment scan precursor peaks are marked.<BR>(Hotkey: 1)");
     dm_precursors_2d_->setShortcut(Qt::Key_1);
 
     connect(dm_precursors_2d_, &QAction::toggled, this, &TOPPViewBase::changeLayerFlag);
 
-    projections_2d_ = tool_bar_2d_peak_->addAction(QIcon(":/projections.png"), "Show Projections", this, &TOPPViewBase::toggleProjections);
+    projections_2d_ = tool_bar_2d_peak_->addAction(QIcon(":/projections.svg"), "Show Projections", this, &TOPPViewBase::toggleProjections);
     projections_2d_->setCheckable(true);
     projections_2d_->setWhatsThis("Projections: Shows projections of peak data along RT and MZ axis.<BR>(Hotkey: 2)");
     projections_2d_->setShortcut(Qt::Key_2);
@@ -260,6 +264,7 @@ namespace OpenMS
     //--2D feature toolbar--
     tool_bar_2d_feat_ = addToolBar("2D feature tool bar");
     tool_bar_2d_feat_->setObjectName("2d_feature_tool_bar");
+    tool_bar_2d_feat_->setIconSize(QSize(32, 32));
 
     dm_hull_2d_ = tool_bar_2d_feat_->addAction(QIcon(":/convexhull.png"), "Show feature convex hull");
     dm_hull_2d_->setCheckable(true);
@@ -322,6 +327,7 @@ namespace OpenMS
     //--2D consensus toolbar--
     tool_bar_2d_cons_ = addToolBar("2D peak tool bar");
     tool_bar_2d_cons_->setObjectName("2d_peak_tool_bar");
+    tool_bar_2d_cons_->setIconSize(QSize(32, 32));
 
     dm_elements_2d_ = tool_bar_2d_cons_->addAction(QIcon(":/elements.png"), "Show consensus feature element positions");
     dm_elements_2d_->setCheckable(true);
@@ -332,6 +338,7 @@ namespace OpenMS
     //--2D identifications toolbar--
     tool_bar_2d_ident_ = addToolBar("2D identifications tool bar");
     tool_bar_2d_ident_->setObjectName("2d_ident_tool_bar");
+    tool_bar_2d_ident_->setIconSize(QSize(32, 32));
 
     dm_ident_2d_ = tool_bar_2d_ident_->addAction(QIcon(":/peptidemz.png"), "Use theoretical peptide mass for m/z positions (default: precursor mass)");
     dm_ident_2d_->setCheckable(true);
@@ -462,10 +469,6 @@ namespace OpenMS
     defaults_.setSectionDescription(user_section + "idview", "Settings for identification view.");
 
     // non-editable parameters
-
-    // not in Dialog (yet?)
-    defaults_.setValue("preferences:topp_cleanup", "true", "If the temporary files for calling of TOPP tools should be removed after the call.");
-    defaults_.setValidStrings("preferences:topp_cleanup", {"true", "false"});
 
     defaults_.setValue("preferences:version", "none", "OpenMS version, used to check if the TOPPView.ini is up-to-date");
     subsections_.emplace_back("preferences:RecentFiles");
@@ -1654,9 +1657,10 @@ namespace OpenMS
       param_.insert("tool_params:", tool_scanner_.getToolParams());
     }
 
+    PlotCanvas* canvas = getActiveCanvas();
     ToolsDialog tools_dialog(this, param_,
                              topp_.file_name + "_ini", current_path_, layer.type,
-                             layer.getName(), &tool_scanner_);
+                             layer.getName(), canvas, canvas->getCurrentLayerIndex(), &tool_scanner_);
 
     if (tools_dialog.exec() == QDialog::Accepted)
     {
@@ -1664,32 +1668,61 @@ namespace OpenMS
       topp_.tool = tools_dialog.getTool();
       topp_.in = tools_dialog.getInput();
       topp_.out = tools_dialog.getOutput();
+      topp_.input_bindings = tools_dialog.getInputLayerBindings();
+      topp_.output_bindings = tools_dialog.getOutputBindings();
       topp_.visible_area_only = visible_area_only;
-      // Build the input file name
-      String file_extension;
-      switch (layer.type)
+
+      topp_.input_file_names.clear();
+      topp_.output_file_names.clear();
+
+      for (Size i = 0; i < topp_.input_bindings.size(); ++i)
+      {
+        const Size layer_index = topp_.input_bindings[i].second;
+        const String layer_ext = [canvas, layer_index]()
         {
-          case LayerDataBase::DataType::DT_PEAK:
-            file_extension = FileTypes::typeToName(FileTypes::MZML);
-            break;
-          case LayerDataBase::DataType::DT_CHROMATOGRAM:
-            file_extension = FileTypes::typeToName(FileTypes::MZML);
-            break;
-          case LayerDataBase::DataType::DT_FEATURE:
-            file_extension = FileTypes::typeToName(FileTypes::FEATUREXML);
-            break;
-          case LayerDataBase::DataType::DT_CONSENSUS:
-            file_extension = FileTypes::typeToName(FileTypes::CONSENSUSXML);
-            break;
-          case LayerDataBase::DataType::DT_IDENT:
-            file_extension = FileTypes::typeToName(FileTypes::IDXML);
-            break;
-          default:
-            file_extension = FileTypes::typeToName(FileTypes::UNKNOWN);
+          switch (canvas->getLayer(layer_index).type)
+          {
+            case LayerDataBase::DataType::DT_PEAK:
+            case LayerDataBase::DataType::DT_CHROMATOGRAM:
+              return FileTypes::typeToName(FileTypes::MZML);
+            case LayerDataBase::DataType::DT_FEATURE:
+              return FileTypes::typeToName(FileTypes::FEATUREXML);
+            case LayerDataBase::DataType::DT_CONSENSUS:
+              return FileTypes::typeToName(FileTypes::CONSENSUSXML);
+            case LayerDataBase::DataType::DT_IDENT:
+              return FileTypes::typeToName(FileTypes::IDXML);
+            default:
+              return FileTypes::typeToName(FileTypes::UNKNOWN);
+          }
+        }();
+
+        topp_.input_file_names.push_back(topp_.file_name + "_in_" + String(i) + "." + layer_ext);
+      }
+
+      for (Size i = 0; i < topp_.output_bindings.size(); ++i)
+      {
+        String output_ext = std::get<2>(topp_.output_bindings[i]);
+        if (output_ext.empty())
+        {
+          output_ext = FileTypes::typeToName(FileTypes::UNKNOWN);
         }
-      topp_.file_name_in = topp_.file_name + "_in." + file_extension;
-      // Get the output file extension
-      topp_.file_name_out = topp_.file_name + "_out." + tools_dialog.getExtension();
+        topp_.output_file_names.push_back(topp_.file_name + "_out_" + String(i) + "." + output_ext);
+      }
+
+      // compatibility with existing single in/out members
+      if (!topp_.input_file_names.empty())
+      {
+        topp_.file_name_in = topp_.input_file_names.front();
+      }
+      if (!topp_.output_file_names.empty())
+      {
+        topp_.file_name_out = topp_.output_file_names.front();
+      }
+
+      // Store temporary file names for cleanup
+      temp_handler_.addFile(topp_.file_name + "_ini");
+      for (const auto& f : topp_.input_file_names) temp_handler_.addFile(f);
+      for (const auto& f : topp_.output_file_names) temp_handler_.addFile(f);
       // run the tool
       runTOPPTool_();
     }
@@ -1717,21 +1750,39 @@ namespace OpenMS
   {
     const LayerDataBase& layer = getActiveCanvas()->getCurrentLayer();
 
-
-    // delete old input and output file
-    File::remove(topp_.file_name_in);
-    File::remove(topp_.file_name_out);
-
-    // test if files are writable
-    if (!File::writable(topp_.file_name_in))
+    // fallback compatibility: convert legacy single-IO members into bindings
+    if (topp_.input_bindings.empty() && !topp_.in.empty())
     {
-      log_->appendNewHeader(LogWindow::LogState::CRITICAL, "Cannot create temporary file", String("Cannot write to '") + topp_.file_name_in + "'!");
-      return;
+      topp_.input_bindings.push_back({topp_.in, getActiveCanvas()->getCurrentLayerIndex()});
+      topp_.input_file_names.push_back(topp_.file_name_in);
     }
-    if (!File::writable(topp_.file_name_out))
+    if (topp_.output_bindings.empty() && !topp_.out.empty())
     {
-      log_->appendNewHeader(LogWindow::LogState::CRITICAL, "Cannot create temporary file", String("Cannot write to '") + topp_.file_name_out + "'!");
-      return;
+      topp_.output_bindings.push_back(std::make_tuple(topp_.out, true, FileTypes::typeToName(FileTypes::UNKNOWN), true));
+      topp_.output_file_names.push_back(topp_.file_name_out);
+    }
+
+    for (const auto& f : topp_.input_file_names) File::remove(f);
+    for (const auto& f : topp_.output_file_names) File::remove(f);
+
+    for (const auto& f : topp_.input_file_names)
+    {
+      if (!File::writable(f))
+      {
+        log_->appendNewHeader(LogWindow::LogState::CRITICAL, "Cannot create temporary file", String("Cannot write to '") + f + "'!");
+        return;
+      }
+    }
+    for (Size i = 0; i < topp_.output_file_names.size(); ++i)
+    {
+      const bool keep_as_new_layer = std::get<1>(topp_.output_bindings[i]);
+      const bool required = std::get<3>(topp_.output_bindings[i]);
+      if (!(keep_as_new_layer || required)) continue;
+      if (!File::writable(topp_.output_file_names[i]))
+      {
+        log_->appendNewHeader(LogWindow::LogState::CRITICAL, "Cannot create temporary file", String("Cannot write to '") + topp_.output_file_names[i] + "'!");
+        return;
+      }
     }
 
     // store data
@@ -1742,24 +1793,36 @@ namespace OpenMS
       topp_.spectrum_id = layer_1d->getCurrentIndex();
     }
 
-    { // just a local scope
+    for (Size i = 0; i < topp_.input_bindings.size(); ++i)
+    {
+      const Size layer_index = topp_.input_bindings[i].second;
+      const LayerDataBase& source_layer = getActiveCanvas()->getLayer(layer_index);
       auto visitor_data = topp_.visible_area_only
-                          ? layer.storeVisibleData(getActiveCanvas()->getVisibleArea().getAreaUnit(), layer.filters)
-                          : layer.storeFullData();
-      visitor_data->saveToFile(topp_.file_name_in, ProgressLogger::GUI);
+                          ? source_layer.storeVisibleData(getActiveCanvas()->getVisibleArea().getAreaUnit(), source_layer.filters)
+                          : source_layer.storeFullData();
+      visitor_data->saveToFile(topp_.input_file_names[i], ProgressLogger::GUI);
     }
 
     // compose argument list
     QStringList args;
     args << "-ini"
          << toQString(topp_.file_name + "_ini")
-         << QString("-%1").arg(toQString(topp_.in))
-         << toQString(topp_.file_name_in)
          << "-no_progress";
-    if (topp_.out != "")
+
+    for (Size i = 0; i < topp_.input_bindings.size(); ++i)
     {
-      args << QString("-%1").arg(toQString(topp_.out))
-           << toQString(topp_.file_name_out);
+      args << QString("-%1").arg(toQString(topp_.input_bindings[i].first))
+           << toQString(topp_.input_file_names[i]);
+    }
+
+    for (Size i = 0; i < topp_.output_bindings.size(); ++i)
+    {
+      const String& out_param = std::get<0>(topp_.output_bindings[i]);
+      const bool keep_as_new_layer = std::get<1>(topp_.output_bindings[i]);
+      const bool required = std::get<3>(topp_.output_bindings[i]);
+      if (!(keep_as_new_layer || required)) continue;
+      args << QString("-%1").arg(toQString(out_param))
+           << toQString(topp_.output_file_names[i]);
     }
 
     // start log and show it
@@ -1827,28 +1890,42 @@ namespace OpenMS
                             QString("If you want to debug this, check the input files in '%1' or"
                                     " enable 'debug' mode in the TOPP ini file.").arg(toQString(File::getTempDirectory()))));
     }
-    else if (!topp_.out.empty())
+    else if (!topp_.output_bindings.empty())
     {
       log_->appendNewHeader(LogWindow::LogState::NOTICE, fromQString(QString("'%1' finished successfully").arg(toQString(topp_.tool))),
                       fromQString(QString("Execution time: %1 ms").arg(topp_.timer.elapsed())));
-      if (!File::readable(topp_.file_name_out))
+
+      for (Size i = 0; i < topp_.output_bindings.size(); ++i)
       {
-        log_->appendNewHeader(LogWindow::LogState::CRITICAL, "Cannot read TOPP output", String("Cannot read '") + topp_.file_name_out + "'!");
-      }
-      else
-      {
-        auto l = getCurrentLayer();
-        if (l)
+        const bool keep_as_new_layer = std::get<1>(topp_.output_bindings[i]);
+        if (!keep_as_new_layer)
         {
-          auto annotator = LayerAnnotatorBase::getAnnotatorWhichSupports(topp_.file_name + "_in");
-          if (annotator.get() == nullptr)
-          { // no suitable annotator? open new layer/window
-            addDataFile(topp_.file_name + "_out", true, false, topp_.layer_name + " (" + topp_.tool + ")", topp_.window_id, topp_.spectrum_id);
-          }
-          else
-          { // we have an annotator ... let's annotate the current layer
-            annotator->annotateWithFilename(*l, *log_, topp_.out + "_out"); // ID tabs are automatically enabled
-          }
+          continue;
+        }
+
+        const String& output_file = topp_.output_file_names[i];
+        if (!File::readable(output_file))
+        {
+          log_->appendNewHeader(LogWindow::LogState::CRITICAL, "Cannot read TOPP output", String("Cannot read '") + output_file + "'!");
+          continue;
+        }
+
+        auto l = getCurrentLayer();
+        if (!l)
+        {
+          continue;
+        }
+
+        // keep legacy behavior: decide annotation mode from input type, not output file type
+        const String& annotator_probe_file = topp_.input_file_names.empty() ? output_file : topp_.input_file_names.front();
+        auto annotator = LayerAnnotatorBase::getAnnotatorWhichSupports(annotator_probe_file);
+        if (annotator.get() == nullptr)
+        { // no suitable annotator? open new layer/window
+          addDataFile(output_file, true, false, topp_.layer_name + " (" + topp_.tool + ")", topp_.window_id, topp_.spectrum_id);
+        }
+        else
+        { // we have an annotator ... let's annotate the current layer
+          annotator->annotateWithFilename(*l, *log_, output_file); // ID tabs are automatically enabled
         }
       }
     }
@@ -1858,13 +1935,6 @@ namespace OpenMS
     topp_.process = nullptr;
     updateMenu();
 
-    // clean up temporary files
-    if (param_.getValue("preferences:topp_cleanup") == "true")
-    {
-      File::remove(topp_.file_name + "_ini");
-      File::remove(topp_.file_name_in);
-      File::remove(topp_.file_name_out);
-    }
   }
 
   const LayerDataBase* TOPPViewBase::getCurrentLayer() const
@@ -2032,7 +2102,7 @@ namespace OpenMS
     const LayerDataBase& layer = getActiveCanvas()->getCurrentLayer();
     
     ExperimentSharedPtrType exp = std::make_shared<AnnotatedMSRun>();
-    exp.get()->getMSExperiment() = std::move(IMDataConverter::reshapeIMFrameToMany(spec));
+    exp.get()->getMSExperiment() = IMDataConverter::reshapeIMFrameToMany(spec);
     // hack, but currently not avoidable, because 2D widget does not support IM natively yet...
     // for (auto& spec : exp->getSpectra()) spec.setRT(spec.getDriftTime());
 
