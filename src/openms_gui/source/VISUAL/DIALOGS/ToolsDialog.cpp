@@ -571,7 +571,16 @@ namespace OpenMS
       }
     }
 
-    threads_combo_->setCurrentIndex(max_threads_ - 1);
+    // protection: if the max threads value is not in the combo, select the last entry
+    const int default_threads_index = threads_combo_->findData(max_threads_);
+    if (default_threads_index >= 0)
+    {
+      threads_combo_->setCurrentIndex(default_threads_index);
+    }
+    else
+    {
+      threads_combo_->setCurrentIndex(threads_combo_->count() - 1);
+    }
     threads_combo_->setToolTip("select custom threads number");
 
     threads_layout->addWidget(fast_mode_checkbox_);
@@ -607,17 +616,12 @@ namespace OpenMS
     }
 
     int threads = max_threads_;
-    if (vis_param_.exists("threads"))
+    if (!default_fast_mode && vis_param_.exists("threads"))
     {
       threads = clampThreadCount_(static_cast<int>(vis_param_.getValue("threads")));
     }
 
-    if (default_fast_mode)
-    {
-      threads = max_threads_;
-    }
-
-    const bool fast_mode = default_fast_mode ? true : (threads == max_threads_);
+    const bool fast_mode = default_fast_mode || (threads == max_threads_);
 
     fast_mode_checkbox_->blockSignals(true);
     threads_combo_->blockSignals(true);
@@ -658,7 +662,12 @@ namespace OpenMS
       threads = clampThreadCount_(requested);
       const int combo_index = threads_combo_->findData(threads);
       // if the value is not in the combo, select the max threads option
-      threads_combo_->setCurrentIndex(combo_index >= 0 ? combo_index : (threads_combo_->count() - 1));
+      int selected_index = combo_index;
+      if (selected_index < 0)
+      {
+        selected_index = threads_combo_->count() - 1;
+      }
+      threads_combo_->setCurrentIndex(selected_index);
     }
 
     vis_param_.setValue("threads", threads);
