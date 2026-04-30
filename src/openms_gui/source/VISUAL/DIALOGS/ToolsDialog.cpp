@@ -34,6 +34,7 @@
 #include <QtWidgets/QWidget>
 
 #include <algorithm>
+#include <bit>
 #include <omp.h>
 #include <utility>
 
@@ -58,7 +59,6 @@ namespace OpenMS
             fast_mode_checkbox_(nullptr),
             threads_combo_(nullptr),
             max_threads_(std::max(1, omp_get_max_threads())),
-            has_threads_param_(false),
             ini_file_(std::move(ini_file)),
             default_dir_(std::move(default_dir)),
             tool_params_(params.copy("tool_params:", true)),
@@ -117,7 +117,6 @@ namespace OpenMS
 
     initializeThreadsControls_();
     cpu_usage_label_ = new QLabel("CPU usage:");
-    cpu_usage_label_->setVisible(false);
     main_grid->addWidget(cpu_usage_label_, 4, 0);
     main_grid->addWidget(threads_widget_, 4, 1);
 
@@ -280,10 +279,10 @@ namespace OpenMS
     tool_desc_->setText(toQString(String(arg_param_.getSectionDescription(tool_name))));
     vis_param_ = arg_param_.copy(tool_name + ":1:", true);
     
-    // check if the tool has a threads parameter and show threads controls if yes
-    has_threads_param_ = vis_param_.exists("threads");
-    syncThreadsControlsFromVisParam_(true);
-    updateThreadsControlsVisibility_();
+    if (vis_param_.exists("threads"))
+    {
+      vis_param_.setValue("threads", max_threads_);
+    }
 
     updateEditorParamFromVisParam_();
 
@@ -315,8 +314,6 @@ namespace OpenMS
     input_combo_->setEnabled(false);
     output_combo_->setCurrentIndex(0);
     output_combo_->setEnabled(false);
-    has_threads_param_ = false;
-    updateThreadsControlsVisibility_();
   }
 
   void ToolsDialog::enable_()
@@ -336,10 +333,7 @@ namespace OpenMS
     {
       editor_->store();
       mergeEditorParamIntoVisParam_();
-      if (!applyThreadsToVisParam_())
-      {
-        return;
-      }
+      applyThreadsToVisParam_();
       arg_param_.insert(getTool() + ":1:", vis_param_);
       if (!File::writable(ini_file_))
       {
@@ -392,9 +386,10 @@ namespace OpenMS
     }
     tools_combo_->setCurrentIndex(pos);
     vis_param_ = arg_param_.copy(getTool() + ":1:", true);
-    has_threads_param_ = vis_param_.exists("threads");
-    syncThreadsControlsFromVisParam_(false);
-    updateThreadsControlsVisibility_();
+    if (vis_param_.exists("threads"))
+    {
+      vis_param_.setValue("threads", max_threads_);
+    }
     updateEditorParamFromVisParam_();
 
     //load data into editor
@@ -423,10 +418,7 @@ namespace OpenMS
     editor_->store();
     mergeEditorParamIntoVisParam_();
 
-    if (!applyThreadsToVisParam_())
-    {
-      return;
-    }
+    applyThreadsToVisParam_();
 
     arg_param_.insert(getTool() + ":1:", vis_param_);
     try
@@ -456,8 +448,6 @@ namespace OpenMS
       editor_->clear();
       input_combo_->clear();
       output_combo_->clear();
-      has_threads_param_ = false;
-      updateThreadsControlsVisibility_();
       disable_();
     }
     tools_combo_->clear();
@@ -565,22 +555,16 @@ namespace OpenMS
       {
         threads_combo_->addItem(QString::number(i), i);
       }
-      if (threads_combo_->itemData(threads_combo_->count() - 1).toInt() != max_threads_)
+      // if max_threads_ is not a power of 2
+      if (!std::has_single_bit(static_cast<unsigned int>(max_threads_)))
       {
         threads_combo_->addItem(QString::number(max_threads_), max_threads_);
       }
     }
 
-    // protection: if the max threads value is not in the combo, select the last entry
+    // max_threads_ is guaranteed to be present in the combo population logic above
     const int default_threads_index = threads_combo_->findData(max_threads_);
-    if (default_threads_index >= 0)
-    {
-      threads_combo_->setCurrentIndex(default_threads_index);
-    }
-    else
-    {
-      threads_combo_->setCurrentIndex(threads_combo_->count() - 1);
-    }
+    threads_combo_->setCurrentIndex(default_threads_index);
     threads_combo_->setToolTip("select custom threads number");
 
     threads_layout->addWidget(fast_mode_checkbox_);
@@ -588,139 +572,30 @@ namespace OpenMS
     threads_layout->addWidget(threads_combo_);
     
     connect(fast_mode_checkbox_, &QCheckBox::toggled, this, &ToolsDialog::fastModeToggled_);
-    connect(threads_combo_, CONNECTCAST(QComboBox, activated, (int)), this, &ToolsDialog::manualThreadsComboChanged_);
 
     fastModeToggled_(true);
-    threads_widget_->setVisible(false);
   }
 
-  // check if the tool has a threads parameter and show threads controls if yes
-  void ToolsDialog::updateThreadsControlsVisibility_()
+  void ToolsDialog::applyThreadsToVisParam_()
   {
-    if (threads_widget_ != nullptr)
-    {
-      threads_widget_->setVisible(has_threads_param_);
-    }
-    if (cpu_usage_label_ != nullptr)
-    {
-      cpu_usage_label_->setVisible(has_threads_param_);
-    }
-  }
-
-  // synchronize manual controls and fast mode based on current vis_param_ value
-  void ToolsDialog::syncThreadsControlsFromVisParam_(bool default_fast_mode)
-  {
-    if (!has_threads_param_ || fast_mode_checkbox_ == nullptr || threads_combo_ == nullptr)
-    {
-      return;
-    }
-
-    int threads = max_threads_;
-    if (!default_fast_mode && vis_param_.exists("threads"))
-    {
-      threads = clampThreadCount_(static_cast<int>(vis_param_.getValue("threads")));
-    }
-
-    const bool fast_mode = default_fast_mode || (threads == max_threads_);
-
-    fast_mode_checkbox_->blockSignals(true);
-    threads_combo_->blockSignals(true);
-
-    fast_mode_checkbox_->setChecked(fast_mode);
-
-    const int combo_index = threads_combo_->findData(threads);
-    if (combo_index >= 0)
-    {
-      threads_combo_->setCurrentIndex(combo_index);
-    }
-    else
-    {
-      threads_combo_->setCurrentIndex(threads_combo_->count() - 1);
-    }
-
-    fast_mode_checkbox_->blockSignals(false);
-    threads_combo_->blockSignals(false);
-
-    fastModeToggled_(fast_mode);
-  }
-
-  bool ToolsDialog::applyThreadsToVisParam_()
-  {
-    if (!has_threads_param_)
-    {
-      return true;
-    }
-
     int threads = max_threads_;
     if (!fast_mode_checkbox_->isChecked())
     {
-      int requested = threads_combo_->currentData().toInt();
-      if (requested <= 0)
-      {
-        requested = max_threads_;
-      }
-      threads = clampThreadCount_(requested);
-      const int combo_index = threads_combo_->findData(threads);
-      // if the value is not in the combo, select the max threads option
-      int selected_index = combo_index;
-      if (selected_index < 0)
-      {
-        selected_index = threads_combo_->count() - 1;
-      }
-      threads_combo_->setCurrentIndex(selected_index);
+      threads = threads_combo_->currentData().toInt();
     }
 
-    vis_param_.setValue("threads", threads);
-    return true;
-  }
-
-  int ToolsDialog::clampThreadCount_(int value) const
-  {
-    if (value < 1)
+    if (vis_param_.exists("threads"))
     {
-      return 1;
+      vis_param_.setValue("threads", threads);
     }
-    if (value > max_threads_)
-    {
-      return max_threads_;
-    }
-    return value;
   }
 
   void ToolsDialog::fastModeToggled_(bool checked)
   {
-    if (threads_combo_ == nullptr)
-    {
-      return;
-    }
-
     threads_combo_->setEnabled(!checked);
     if (checked)
     {
-      const int combo_index = threads_combo_->findData(max_threads_);
-      if (combo_index >= 0)
-      {
-        threads_combo_->setCurrentIndex(combo_index);
-      }
-    }
-  }
-
-  void ToolsDialog::manualThreadsComboChanged_(int index)
-  {
-    // if we are in fast mode or the combo is not properly initialized, ignore changes in the combo box
-    if (threads_combo_ == nullptr || fast_mode_checkbox_ == nullptr || fast_mode_checkbox_->isChecked())
-    {
-      return;
-    }
-    
-    const int value = threads_combo_->itemData(index).toInt();
-    if (value < 1 || value > max_threads_)
-    {
-      const int fallback = threads_combo_->findData(max_threads_);
-      if (fallback >= 0)
-      {
-        threads_combo_->setCurrentIndex(fallback);
-      }
+      threads_combo_->setCurrentIndex(threads_combo_->findData(max_threads_));
     }
   }
 

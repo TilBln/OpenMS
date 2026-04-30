@@ -86,8 +86,6 @@ private:
     QComboBox * threads_combo_;
     /// Maximum available thread count from OpenMP
     int max_threads_;
-    /// Whether the current tool offers a threads parameter
-    bool has_threads_param_;
     /// tools description label
     QLabel * tool_desc_;
     /// ComboBox for choosing a TOPP-tool
@@ -135,14 +133,8 @@ private:
     QStringList createToolsList_();
     /// Populate and initialize thread controls
     void initializeThreadsControls_();
-    /// Show or hide thread controls based on current tool support
-    void updateThreadsControlsVisibility_();
-    /// Synchronize manual controls and fast mode based on current vis_param_ value
-    void syncThreadsControlsFromVisParam_(bool default_fast_mode);
     /// Apply the selected thread mode/value back to vis_param_
-    bool applyThreadsToVisParam_();
-    /// Clamp requested thread count to valid range [1, max_threads_]
-    int clampThreadCount_(int value) const;
+    void applyThreadsToVisParam_();
     /// Build GUI-only editor parameters from internal parameter state
     void updateEditorParamFromVisParam_();
     /// Merge edited GUI-only parameters back into internal parameter state
@@ -164,8 +156,6 @@ protected slots:
     void reloadPlugins_();
     /// Slot toggling between fast and manual thread mode
     void fastModeToggled_(bool checked);
-    /// Slot handling predefined manual thread selection from combo
-    void manualThreadsComboChanged_(int index);
   };
 
 }
